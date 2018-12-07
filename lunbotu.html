@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<style>
+		* {
+			padding: 0px;
+			margin: 0px;
+			list-style: none;
+		}
+
+		.wrapper {
+			position: relative;
+			width: 500px;
+			height: 300px;
+			border: 1px solid black;
+			overflow: hidden;
+			margin: 200px auto 0px;
+		}
+
+		.center {
+			height: 300px;
+			position: absolute;
+			width: 2500px;
+		}
+
+		li {
+
+			display: inline-block;
+			width: 500px;
+			height: 300px;
+			float: left;
+
+		}
+
+		li img {
+			width: 100%;
+			height: 100%;
+		}
+
+		.btn {
+			width: 40px;
+			height: 40px;
+			color: #fff;
+			background-color: black;
+			line-height: 40px;
+			text-align: center;
+			position: absolute;
+			top: 50%;
+			margin-top: -20px;
+			cursor: pointer;
+			opacity: 0.2;
+
+		}
+
+		.wrapper:hover .btn {
+			opacity: 0.8;
+		}
+
+		.leftbtn {
+			left: 0px;
+		}
+
+		.rightbtn {
+			right: 0px;
+		}
+
+		.bot {
+			position: absolute;
+			bottom: 20px;
+			width: 150px;
+			height: 20px;
+			left: 50%;
+			margin-left: -50px;
+		}
+
+		.bot span {
+			line-height: 20px;
+			display: inline-block;
+			width: 18px;
+			height: 18px;
+			border-radius: 50%;
+			margin-right: 10px;
+			background-color: rgb(180, 180, 169);
+		}
+
+		.bot .active {
+			background-color: #f40;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="wrapper">
+		<ul class="center">
+			<li>
+				<img src=".\pictures\1.jpg">
+			</li>
+			<li>
+				<img src=".\pictures\2.jpg">
+			</li>
+			<li>
+				<img src=".\pictures\3.jpg">
+			</li>
+			<li>
+				<img src=".\pictures\4.jpg">
+			</li>
+			<li>
+				<img src=".\pictures\1.jpg">
+			</li>
+		</ul>
+
+		<div class="btn leftbtn">《</div>
+		<div class="btn rightbtn">》</div>
+
+		<div class="bot">
+			<span class="active"></span>
+			<span class=""></span>
+			<span class=""></span>
+			<span class=""></span>
+		</div>
+
+	</div>
+
+
+	<script>
+		var timer = null;
+		var oul = document.getElementsByTagName('ul')[0];
+		var oSpan = document.getElementsByTagName('span');
+		var leftbtn = document.getElementsByClassName('leftbtn')[0];
+		var rightbtn = document.getElementsByClassName('rightbtn')[0];
+		var moveWidth = oul.children[0].offsetWidth;
+		var len = oul.children.length - 1;
+		var lock = true;
+		var oSpanArray = document.getElementsByClassName('bot')[0].getElementsByTagName('span');
+		var index = 0;
+		var num = len - 1;
+
+
+		//封装兼容性获取当前位置
+		function getStyle(obj, attr) {
+			if (obj.currentStyle) {
+				return obj.icurrentStyle[attr];
+			} else {
+				return window.getComputedStyle(obj, false)[attr];
+			}
+		}
+
+
+
+		//开始移动
+
+		function startMove(direction) {
+			//放置一个锁
+			if (lock) {
+				lock = false;
+				clearTimeout(timer);
+
+				//向左点
+				if (!direction || direction == 'left') {
+					index++;
+					start(oul, { left: (oul.offsetLeft - moveWidth) }, function () {
+						if (oul.offsetLeft == -len * moveWidth) {
+							index = 0;
+							oul.style.left = '0px';
+						}
+						changeIndex(index);
+						lock = true;
+						timer = setTimeout(startMove, 1500);
+					});
+
+				}
+
+				//向右点
+				else if (direction == 'right') {
+					index--;
+					if (oul.offsetLeft == 0) {
+						index = num;
+						oul.style.left = -num * moveWidth + 'px';
+					}
+					start(oul, { left: (oul.offsetLeft + moveWidth) }, function () {
+						changIndex(index);
+						lock = true;
+						timer = setTimeout(startMove, 1500);
+					});
+
+				}
+			}
+		}
+
+		timer = setTimeout(startMove, 1500);
+
+		//左右按键
+		leftbtn.onclick = function () {
+			startMove('left');
+
+			// oul.style.left = parseInt(oul.style.left) + moveWidth + 'px';
+			// setInterval(startMove,1500);		
+		}
+
+		rightbtn.onclick = function () {
+			startMove('right');
+		}
+
+		//圆点跟随移动
+		function changeIndex(_index) {
+			for (var i = 0; i < oSpan.length; i++) {
+				oSpanArray[i].className = '';
+			}
+			oSpanArray[_index].className = 'active';
+		}
+
+		//点击圆点
+		for (var i = 0; i < oSpanArray.length; i++) {
+			(function (_index) {
+				oSpanArray[_index].onclick = function () {
+					lock = false;
+					clearTimeout(timer);
+					start(oul, { left: -_index * moveWidth }, function () {
+						lock = true;
+						timer = setTimeout(startMove, 1500);
+						changeIndex(_index);
+					})
+				}
+			})(i)
+		}
+
+		//缓冲移动
+		function start(obj, json, callback) {
+			var timer;
+			var speed, icur;
+			clearInterval(obj.timer);
+			obj.timer = setInterval(function () {
+				var stop = true;
+				for (var prop in json) {
+					if (prop == 'opacity') {   //透明度
+						icur = parseFloat(getStyle(obj, prop)) * 100;
+					} else {
+						icur = parseInt(getStyle(obj, prop));
+					}
+					speed = (json[prop] - icur) / 7;       //最后的时候会不断产生小数，但是小数会被舍去取整，所以需要一个向上取整
+					speed = speed > 0 ? Math.ceil(speed) : Math.floor(speed);     //向上取整
+					if (prop == 'opacity') {    //透明度
+						obj.style[prop] = (icur + speed) / 100;
+					} else {
+						obj.style[prop] = (icur + speed) + 'px';
+					}
+					if (icur != json[prop]) {   //判断当前的位置是否与预定的位置相等
+						stop = false;
+					}
+				}
+				if (stop) {      //判断当前的位置是否与预定的位置相等，相等则终止
+					clearInterval(obj.timer);
+					typeof callback == 'function' ? callback() : ''; //执行下一条
+				}
+			}, 30)
+		}
+	</script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <div class="posterMovieGrid">
+
+		<div class="pages" style="left: 0px;">
+			<div pagenum="4" class="page" style="left: 0px;">
+				<ul class="item" sn="4">
+					<li class="item_img">
+						<img src="//img.alicdn.com/tfs/TB1_EdOflLoK1RjSZFuXXXn0XXa-1190-410.jpg"></li>
+
+					<li class="item_url">
+						<a href="//v.youku.com/v_show/id_XMzg0MTMwMjYwNA==.html?spm=a2h1n.8261147.0.0&amp;s=75efbfbd722f7b7411ef" target="video" title="长安妖奇谈" data-from="1-4"></a></li>
+				</ul>
+			</div>
+		</div>
+
+
+		<div class="pager">
+			<div pagenum="1" class=""></div>
+			<div pagenum="2" class=""></div>
+			<div pagenum="3" class=""></div>
+			<div pagenum="4" class="current"></div>
+			<div pagenum="5" class=""></div>
+			<div pagenum="6" class=""></div>
+			<div pagenum="7" class=""></div>
+			<div pagenum="8" class=""></div>
+			<div pagenum="9" class=""></div></div>
+			<div class="btnprev" style="visibility: visible;"></div>
+			<div class="btnnext" style="visibility: visible;"></div>
+		</div>
+
+	</div>  -->
